@@ -33,53 +33,91 @@ def build_tools():
 							"properties": {
 								arg: {
 									"type": args_cat[i][arg],
-									"description": descr[arg]. If it is not explicitly given, ask the user.",
+									"description": descr[arg][1] + ".If it is not explicitly given, ask the user; never try to make up a value.",
 								},
-								"is_veggie": {
-									"type": "boolean",
-									"description": "A boolean representing whether the meal is vegetarian. If it is not explicitly given, ask the user."
-								}
 							},
-							"required": ["n_guests", "is_veggie"]
+							"required": [arg]
 						}
+					}
 			}
+			tools.append(d)
 
 def mainloop():
 	messages = []
 	client = Mistral(api_key = api_key)
-    return
+
+	build_tools()
+
+	# if context:
+	# 	messages.append({"role": "system", "content": context})
+
+	while None in dicoEmissions:
+		i = dicoEmissions.index(None)
+
+		messages.append({"role": ""})
+
+		while None in argsTotal[i].values():
+			message = input()
+		
+			messages.append({"role": "user", "content": message})
+
+			print ("User: ", message, '\n')
+
+			ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
+			#print (ans)
+			messages.append(ans)
+
+			while ans.tool_calls:
+				for call in ans.tool_calls:
+					function_name = call.function.name
+					function_params = json.loads(call.function.arguments)
+					print ("System: bot made function call to", function_name, "with parameters", function_params)
+					
+					argsTotal[function_params.k]
+					print ("System: result is", res, '\n')
+
+					messages.append({"role":"tool", "name":function_name, "content":str(res), "tool_call_id":call.id})
+
+				ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
+				messages.append(ans)
+			
+			if ans.content:
+				print ("Bot: ", ans.content, '\n', flush = True)
+			else:
+				print ("Bot: (silence)\n", flush = True)
+	return
 	
 
 def set_elec_emissions(is_inside, n_hours):
-    if (is_inside):
-        return n_hours*3
-    else:
-        return 0
+	if (is_inside):
+		return n_hours*3
+	else:
+		return 0
 
 def set_food_emissions(menu, nbPers):
-    # Fonction très simple pour le moment
-    # A long terme, il faut convertir le menu en CO2 à partir d'Agribalise et de Reasoning AI puis faire le pduit
-    return 3*nbPers
+	# Fonction très simple pour le moment
+	# A long terme, il faut convertir le menu en CO2 à partir d'Agribalise et de Reasoning AI puis faire le pduit
+	return 3*nbPers
 
 def set_tspt_emissions(mode, dist, nbPers):
-    return mode[0]*dist*nbPers
+	return mode[0]*dist*nbPers
 
 
 def set_infra_emissions(is_inside, n_hours):
-    if(is_inside):
-        return n_hours*3         # 3 correspond aux émissions de CO2 par heure dues au chauffage en intérieur
-    else:
-        return 0
+	if(is_inside):
+		return n_hours*3         # 3 correspond aux émissions de CO2 par heure dues au chauffage en intérieur
+	else:
+		return 0
 
 def set_other_emissions():
-    return 0
+	return 0
 	
 
-listFunc = [set_elec_emissions, set_food_emissions, set_]
+listFunc = [set_elec_emissions, set_food_emissions, set_tspt_emissions, set_infra_emissions]
 
 def update_emissions(i):
 
-    dicoEmissions[i] = 1
+	dicoEmissions[i] = 1
 	return
 
 
@@ -90,6 +128,6 @@ def update_emissions(i):
 # def to_text(category, tabArgs, value):
 #     text = ""
 #     if(category==0):
-        
+		
 
 #     return text
