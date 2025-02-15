@@ -23,12 +23,12 @@ def set_elec_emissions(is_inside, n_hours, **kw):
 	else:
 		return 0
 
-def set_food_emissions(menu, nbPers, **kw):
+def set_food_emissions(menu, n_persons, **kw):
 	# Fonction très simple pour le moment
 	# A long terme, il faut convertir le menu en CO2 à partir d'Agribalise et de Reasoning AI puis faire le pduit
-	return 3*nbPers
+	return 3*n_persons
 
-def set_tspt_emissions(mode, dist, nbPers, **kw):
+def set_tspt_emissions(mode, distance, n_persons, **kw):
 	#mode : train , bike , car, bus, plane
 	#dist km
 	if mode == "train":
@@ -71,7 +71,7 @@ def set_tspt_emissions(mode, dist, nbPers, **kw):
 
 	
 	# Calcul des émissions totales
-	total_emissions = emission_factor * dist * nbPers
+	total_emissions = emission_factor * distance * n_persons
 	return total_emissions
 
 def set_infra_emissions(is_inside, n_hours, **kw):
@@ -85,7 +85,7 @@ def set_other_emissions(**kw):
 
 class Demandeur:
 	def __init__(self):
-		self.messages = [{"role": "system", "content": ""}]
+		self.messages = [{"role": "system", "content": ""}, {"role": "user", "content": "Salut ! J'aimerais organiser une soirée étudiante. Peux-tu m'aider à estimer ses émissions de CO2 ?"}]
 		self.client = Mistral(api_key = api_key)
 		self.argsTotal = {key: None for dico in argsCat for key in dico}
 		self.dicoEmissions = [None] * len(categories)
@@ -120,7 +120,7 @@ class Demandeur:
 
 	def update_emissions(self, i):
 		listFunc = [lambda **kwargs: 0, set_elec_emissions, set_food_emissions, set_tspt_emissions, set_infra_emissions, set_other_emissions]
-		self.dicoEmissions[i] = listFunc[i](self.argsTotal)
+		self.dicoEmissions[i] = listFunc[i](**self.argsTotal)
 		return
 
 
@@ -130,50 +130,54 @@ class Demandeur:
 	def is_category_complete(self, i):
 		return all(self.argsTotal[key] != None for key in argsCat[i])
 
-	def mainloop(self, wait_message, send_message, update_message):
-		if None in self.dicoEmissions:
+	async def mainloop(self, wait_message, send_message, update_message):
+		ans = None
+
+		while None in self.dicoEmissions:
 			i = self.dicoEmissions.index(None)
 
-			prompt = "Tu es un chatbot chargé de calculer les émissions de CO2 liées à l'organisation d'une soirée. Il faut que tu demandes à l'utilisateur les valeurs des paramètres suivants :\n"
+			prompt = "Tu es un chatbot chargé de calculer les émissions de CO2 liées à l'organisation d'une soirée. Il faut que tu demandes à l'utilisateur les informations suivantes :\n"
 			for arg in argsCat[i].keys():
-				prompt += arg + ' : ' + descr[arg][1]
-			
+				prompt += descr[arg][1] + '\n'
+
 			self.messages[0]["content"] = prompt
-
-			ans = self.client.chat.complete(model = model, messages = self.messages, tools = self.tools, tool_choice = "auto").choices[0].message
-			self.messages.append(ans)
-
-			print ("Bot:", ans.content, '\n')
+			#print (prompt)
 
 			while not self.is_category_complete(i):
-				print ("User: ", end = '')
-				message = input()
-				print ("\n")
-			
-				self.messages.append({"role": "user", "content": message})
+				if ans is None or ans.content == '':
+					ans = self.client.chat.complete(model = model, messages = self.messages, tools = self.tools, tool_choice = "auto").choices[0].message
+					self.messages.append(ans)
 
+					print ("Bot:", ans.content, '\n')
+					send_message(ans.content)
+				
+				message = await wait_message()
+				print ("User:", message, '\n')
+		
+				self.messages.append({"role": "user", "content": message})
+				
 				ans = self.client.chat.complete(model = model, messages = self.messages, tools = self.tools, tool_choice = "auto").choices[0].message
-				#print (ans)
 				self.messages.append(ans)
 
-				while ans.tool_calls:
+				# ans = self.client.chat.complete(model = model, messages = self.messages, tools = self.tools, tool_choice = "auto").choices[0].message
+				# self.messages.append(ans)
+
+				if ans.tool_calls:
 					for call in ans.tool_calls:
 						function_name = call.function.name
 						function_params = json.loads(call.function.arguments)
-						# print ("System: bot made function call to", function_name, "with parameters", function_params)
+						print ("System: bot made function call to", function_name, "with parameters", function_params)
 						
 						arg, val = list(function_params.items())[0]
 
 						print ("System: bot updated variable", arg, "with value", val, "(type:", type(val), ")\n")
 						self.argsTotal[arg] = val
 
-						self.messages.append({"role":"tool", "name":function_name, "content":"", "tool_call_id":call.id})
+						self.messages.append({"role":"tool", "name":function_name, "content":"La valeur a bien été mise à jour.", "tool_call_id":call.id})
 
-					ans = self.client.chat.complete(model = model, messages = self.messages, tools = self.tools, tool_choice = "auto").choices[0].message
-					self.messages.append(ans)
-				
-				if isinstance(ans.content, str):
+				else:
 					print ("Bot:", ans.content, '\n', flush = True)
+					send_message(ans.content)
 
 				print (self.messages)
 
@@ -185,7 +189,7 @@ class Demandeur:
 
 if __name__ == "__main__":
 	d = Demandeur()
-	d.mainloop(0)
+	d.mainloop(None, None, None)
 	
 	print (d.argsTotal, d.dicoEmissions)
 
