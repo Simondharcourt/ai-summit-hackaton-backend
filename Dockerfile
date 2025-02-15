@@ -8,4 +8,8 @@ RUN uv sync --frozen
 
 EXPOSE 8000
 
+ARG API_KEY_MISTRAL
+
+ENV MISTRAL_API_KEY=$mistral_api_key
+
 CMD ["uv", "run", "fastapi", "run", "server/main.py"]

@@ -1,15 +1,6 @@
 import os, json
 from mistralai import Mistral
 
-from dotenv import load_dotenv
-
-# with open("../.env", "r") as f:
-#     print(f.readline())
-
-#     f.close()
-
-print(load_dotenv())
-
 api_key = os.environ["MISTRAL_API_KEY"]
 
 model = "mistral-large-latest"
