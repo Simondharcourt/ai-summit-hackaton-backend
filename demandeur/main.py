@@ -12,14 +12,34 @@ dicoEmissions = [None] * len(categories)
 
 
 
-
-
 tabEmissions = [(),(),(),(),()]
 argsTotal = []
 
+def set_elec_emissions(is_inside, n_hours):
+    if (is_inside):
+        return n_hours*3
+    else:
+        return 0
 
-def set_tspt_emissions():
+def set_food_emissions(menu, nbPers):
+    # Fonction très simple pour le moment
+    # A long terme, il faut convertir le menu en CO2 à partir d'Agribalise et de Reasoning AI puis faire le pduit
+    return 3*nbPers
+
+def set_tspt_emissions(mode, dist, nbPers):
     return mode[0]*dist*nbPers
+
+
+def set_infra_emissions(is_inside, n_hours):
+    if(is_inside):
+        return n_hours*3         # 3 correspond aux émissions de CO2 par heure dues au chauffage en intérieur
+    else:
+        return 0
+
+def set_other_emissions():
+    return 0
+
+
 
 
 
