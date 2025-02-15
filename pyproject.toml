@@ -12,6 +12,8 @@ dependencies = [
     "mistralai>=0.0.7",
     "langgraph-cli[inmem]>=0.0.1",
     "fastapi>=0.115.8",
+    "uvicorn>=0.29.0",
+    "mistralai>=0.0.12"
 ]
 
 [build-system]
@@ -29,4 +31,4 @@ select = ["E", "F", "I"]
 packages = ["src/ai_summit_hackaton_backend"]
 
 [tool.setuptools]
-packages = ["src"] 
+packages = ["src"]

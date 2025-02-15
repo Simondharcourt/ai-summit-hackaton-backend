@@ -1,77 +1,124 @@
-from langgraph.graph import StateGraph
+from langgraph.graph import StateGraph, START, END
+from typing_extensions import TypedDict
+from typing import Optional
 
-# Définition de l'état du chatbot
-class EveningCarbonState:
-    def __init__(self):
-        self.reponses = {}
-        self.emissions_total = 0.0
-        self.nb_personnes = 0
+# Définition de l'état
+class InputState(TypedDict):
+    message: Optional[str]
+
+
+class OutputState(TypedDict):
+    reponse: Optional[str]
     
-    def update_emission(self, amount: float):
-        """Ajoute une quantité d'émissions au total"""
-        self.emissions_total += amount
-
-# Création du graphe
-graph = StateGraph(EveningCarbonState)
-
-# Node pour poser la question sur le nombre d'invités
-def ask_guest_count(state: EveningCarbonState):
-    # Ici, le bot poserait la question via l'interface utilisateur (CLI, web, etc.)
-    guest_count = int(input("Combien d'invités attendez-vous ? "))
-    state.reponses['guests'] = guest_count
-    # Exemple de calcul : 5 kg CO₂ par invité
+class OverallState(InputState, OutputState):
+    event_type: Optional[str]
+    event_duration: Optional[str]
+    event_location: Optional[str]
+    message: Optional[str]
+    reponse: Optional[str]
+    outside: Optional[bool]
+    nb_participants: Optional[int]
     
-    state.update_emission(guest_count * 5)
+def event_type_node(state: OverallState):
+    message = "Quel est le type d'événement ?"
+    state["event_type"] = input(message)
     return state
 
-graph.add_node("q1_guest_count", ask_guest_count)
-
-# Node pour la question sur le type de repas
-def ask_meal_type(state: EveningCarbonState):
-    meal_type = input("Quel type de repas sera servi (local/international) ? ").lower().strip()
-    state.reponses['meal'] = meal_type
-    # Exemple de calcul : +50 kg si international, +20 kg si local
-    if meal_type == "international":
-        state.update_emission(50)
-    else:
-        state.update_emission(20)
+def nb_participants_node(state: OverallState):
+    message = "Combien y aura-t-il de participants ?"
+    state["nb_participants"] = input(message)
     return state
 
-graph.add_node("q2_meal_type", ask_meal_type)
-
-# Node pour la question sur le moyen de transport
-def ask_transport(state: EveningCarbonState):
-    transport = input("Quel moyen de transport sera utilisé pour se rendre à l'événement ? (voiture, transports en commun, vélo, marche) ").lower().strip()
-    state.reponses['transport'] = transport
-    # Exemple de calcul
-    if transport == "voiture":
-        state.update_emission(30)
-    elif transport == "transports en commun":
-        state.update_emission(15)
-    # vélo ou marche ne génèrent pas d'émission supplémentaires
+def event_duration_in_days_node(state: OverallState):
+    message = "Combien de jours durera l'événement ?"
+    state["event_duration"] = input(message)
     return state
 
-graph.add_node("q3_transport", ask_transport)
-
-# Node pour le calcul final du bilan carbone
-def calculate_carbon(state: EveningCarbonState):
-    print("\nCalcul du bilan carbone de votre soirée :")
-    print("Réponses :", state.reponses)
-    print("Total des émissions estimées :", state.emissions_total, "kg CO₂")
+def event_location_node(state: OverallState):
+    message = "Où se situe l'événement ?"
+    state["event_location"] = input(message)
     return state
 
-graph.add_node("calculate", calculate_carbon)
+def repartition_transport_node(state: OverallState):
+    return state # dict
 
-# Définir la séquence (edges) du dialogue
-graph.set_entry_point("q1_guest_count")
-graph.add_edge("q1_guest_count", "q2_meal_type")
-graph.add_edge("q2_meal_type", "q3_transport")
-graph.add_edge("q3_transport", "calculate")
+def have_facture_food_node(state: OverallState):
+    return state # bool
 
-# Compiler et lancer l'application
-app = graph.compile()
+def parse_facture_food_node(state: OverallState):
+    return state # dict
 
-if __name__ == "__main__":
-    # Initialisation de l'état
-    state = EveningCarbonState()
-    app.invoke(state)
+def detail_food_node(state: OverallState):
+    return state # dict
+
+def outside_or_inside_event_node(state: OverallState):
+    # Demander à l'utilisateur si l'événement est à l'extérieur ou à l'intérieur
+    reponse = input("L'événement est-il à l'extérieur ou à l'intérieur ? (exterieur/interieur): ").lower()
+    while reponse not in ["exterieur", "interieur"]:
+        reponse = input("Veuillez répondre par 'exterieur' ou 'interieur': ").lower()
+    state["outside"] = True if reponse == "exterieur" else False
+    return "outside" if reponse == "exterieur" else "inside"
+
+def chauffage_ou_climatisation_node(state: OverallState):
+    return state # bool
+
+def food_analyse_node(state: OverallState):
+    return state
+
+def food_sum_up_and_what_else_node(state: OverallState):
+    return state # bool
+
+def food_to_agribalyse_node(state: OverallState):
+    return state
+
+
+
+
+graph = StateGraph(OverallState)
+
+
+graph.add_node("which_event_type", event_type_node)
+graph.add_node("how_many_participants", nb_participants_node)
+graph.add_node("how_long_event_in_days", event_duration_in_days_node)
+graph.add_node("where_is_event", event_location_node)
+
+graph.add_node("how_repartition_transport", repartition_transport_node)
+
+
+graph.add_node("detail_food", detail_food_node)
+graph.add_node("have_facture_food", have_facture_food_node)
+
+
+graph.add_node("parse_facture_food", parse_facture_food_node)
+graph.add_node("food_to_agribalyse", food_to_agribalyse_node)
+
+graph.add_node("chauffage_ou_climatisation", chauffage_ou_climatisation_node)
+
+graph.add_edge(START, "which_event_type")
+graph.add_edge("which_event_type", "how_many_participants")
+graph.add_edge("how_many_participants", "how_long_event_in_days")
+graph.add_edge("how_long_event_in_days", "where_is_event")
+graph.add_edge("where_is_event", "how_repartition_transport")
+graph.add_conditional_edges(
+    "how_repartition_transport",
+    outside_or_inside_event_node,
+    {
+        "outside": "chauffage_ou_climatisation",
+        "inside": "have_facture_food"
+    }
+)
+graph.add_edge("chauffage_ou_climatisation", "have_facture_food")
+graph.add_conditional_edges(
+    "have_facture_food",
+    have_facture_food_node,
+    {
+        "have_facture_food": "parse_facture_food",
+        "no_facture_food": "detail_food",
+    },
+)
+graph.add_edge("detail_food", "food_to_agribalyse")
+graph.add_edge("parse_facture_food", "food_to_agribalyse")
+graph.add_edge("food_to_agribalyse", END)
+graph.compile()
+
+
