@@ -47,11 +47,8 @@ def build_tools():
 def mainloop():
 	messages = []
 	client = Mistral(api_key = api_key)
-
-
-
-tabEmissions = [(),(),(),(),()]
-argsTotal = []
+    return
+	
 
 def set_elec_emissions(is_inside, n_hours):
     if (is_inside):
@@ -76,6 +73,14 @@ def set_infra_emissions(is_inside, n_hours):
 
 def set_other_emissions():
     return 0
+	
+
+listFunc = [set_elec_emissions, set_food_emissions, set_]
+
+def update_emissions(i):
+
+    dicoEmissions[i] = 1
+	return
 
 
 
