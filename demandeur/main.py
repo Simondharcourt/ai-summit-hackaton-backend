@@ -1,11 +1,12 @@
 import os, json
 from mistralai import Mistral
 
-api_key = "29NL9Foa83Niu5QLidPK4JMMEwjB7OCx"
+api_key = open("demandeur/api_key.txt").read()
+
 model = "mistral-large-latest"
 
 categories = ("Base", "Electricity", "Food", "Transport", "Infrastructure", "Other")
-args_cat = ({"n_persons": "integer"}, {"is_inside": "boolean", "n_hours": "integer"}, {"menu": "string"}, {"mode": "string", "distance": "float"}, {}, {})
+argsCat = ({"n_persons": "integer"}, {"is_inside": "boolean", "n_hours": "integer"}, {"menu": "string"}, {"mode": "string", "distance": "number"}, {}, {})
 
 descr = {"n_persons": ("Set the number of guests attending the party", "Number of guests attending the party"),
 		 "is_inside": ("Set whether the party is taking place indoors or outdoors", "A boolean that is true if the party is indoors, false if the party is outdoors"),
@@ -15,14 +16,14 @@ descr = {"n_persons": ("Set the number of guests attending the party", "Number o
 		 "distance": ("Set the distance the guests will have to travel", "A floating-points value giving the distance the guests will have to travel, in kilometers"),
 		 }
 
-argsTotal = {key: None for dico in args_cat for key in dico}
+argsTotal = {key: None for dico in argsCat for key in dico}
 dicoEmissions = [None] * len(categories)
 
 tools = []
 
 def build_tools():
 	for i in range(len(categories)):
-		for arg in args_cat[i]:
+		for arg in argsCat[i]:
 			d = {
 					"type": "function",
 					"function": {
@@ -32,7 +33,7 @@ def build_tools():
 							"type": "object",
 							"properties": {
 								arg: {
-									"type": args_cat[i][arg],
+									"type": argsCat[i][arg],
 									"description": descr[arg][1] + ".If it is not explicitly given, ask the user; never try to make up a value.",
 								},
 							},
@@ -41,51 +42,6 @@ def build_tools():
 					}
 			}
 			tools.append(d)
-
-def mainloop():
-	messages = []
-	client = Mistral(api_key = api_key)
-
-	build_tools()
-
-	# if context:
-	# 	messages.append({"role": "system", "content": context})
-
-	while None in dicoEmissions:
-		i = dicoEmissions.index(None)
-
-		messages.append({"role": ""})
-
-		while None in argsTotal[i].values():
-			message = input()
-		
-			messages.append({"role": "user", "content": message})
-
-			print ("User: ", message, '\n')
-
-			ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
-			#print (ans)
-			messages.append(ans)
-
-			while ans.tool_calls:
-				for call in ans.tool_calls:
-					function_name = call.function.name
-					function_params = json.loads(call.function.arguments)
-					print ("System: bot made function call to", function_name, "with parameters", function_params)
-					
-					argsTotal[function_params.k]
-					print ("System: result is", res, '\n')
-
-					messages.append({"role":"tool", "name":function_name, "content":str(res), "tool_call_id":call.id})
-
-				ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
-				messages.append(ans)
-			
-			if ans.content:
-				print ("Bot: ", ans.content, '\n', flush = True)
-			else:
-				print ("Bot: (silence)\n", flush = True)
-	return
 	
 
 def set_elec_emissions(is_inside, n_hours):
@@ -100,7 +56,11 @@ def set_food_emissions(menu, nbPers):
 	return 3*nbPers
 
 def set_tspt_emissions(mode, dist, nbPers):
-	return mode[0]*dist*nbPers
+	# mode: "train", "bus", "car", "avion", "bike"
+	# dist: km / personne
+	# nb personne
+	if mode ==  "train":
+		return dist * nbPers * 1.73e-3
 
 
 def set_infra_emissions(is_inside, n_hours):
@@ -121,7 +81,8 @@ def update_emissions(i):
 	return
 
 
-
+def is_category_complete(i):
+	return all(argsTotal[key] != None for key in argsCat[i])
 
 
 
@@ -131,3 +92,73 @@ def update_emissions(i):
 		
 
 #     return text
+
+def mainloop():
+	messages = []
+	client = Mistral(api_key = api_key)
+
+	messages.append({"role": "system", "content": ""})
+
+	build_tools()
+
+	# if context:
+	# 	messages.append({"role": "system", "content": context})
+
+	while None in dicoEmissions:
+		i = dicoEmissions.index(None)
+
+		if not argsCat[i]:
+			dicoEmissions[i] = 0
+			continue
+
+		messages[0]["content"] = "Il faut que tu demandes à l'utilisateur les valeurs des paramètres " + ", ".join(argsCat[i].keys())
+
+		ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
+		messages.append(ans)
+
+		print ("Bot:", ans.content, '\n')
+
+		while not is_category_complete(i):
+			message = input()
+		
+			messages.append({"role": "user", "content": message})
+
+			print ("User:", message, '\n')
+
+			ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
+			#print (ans)
+			messages.append(ans)
+
+			while ans.tool_calls:
+				for call in ans.tool_calls:
+					function_name = call.function.name
+					function_params = json.loads(call.function.arguments)
+					# print ("System: bot made function call to", function_name, "with parameters", function_params)
+					
+					arg, val = list(function_params.items())[0]
+
+					print ("System: bot updated variable", arg, "with value", val, "(type:", type(val), ")\n")
+					argsTotal[arg] = val
+
+					messages.append({"role":"tool", "name":function_name, "content":"", "tool_call_id":call.id})
+
+				ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
+				messages.append(ans)
+			
+			if isinstance(ans.content, str):
+				print ("Bot:", ans.content, '\n', flush = True)
+
+			print (messages)
+
+		print ("finished category", i)
+
+		for j in range(len(categories)):
+			if is_category_complete(j):
+				update_emissions(j)
+
+mainloop()
+
+print (argsTotal)
+print (dicoEmissions)
+
+# La fête est en extérieur ; elle durera 6 heures ; 50 personnes viendront, et parcourront 20 km en train ; nous mangerons du pain et du vin

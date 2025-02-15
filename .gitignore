@@ -7,7 +7,7 @@ uv.lock
 .DS_Store
 
 .idea
-
+demandeur/api_key.txt
 ai_summit_hackaton_backend.egg-info
 
 .pytest_cache
