@@ -1,0 +1,21 @@
+{
+    "model": {
+        "provider": "mistral",
+        "name": "mistral-medium",
+        "temperature": 0.7
+    },
+    "api": {
+        "mistral_api_key": "${MISTRAL_API_KEY}"
+    },
+    "graph": {
+        "max_iterations": 10,
+        "verbose": true
+    },
+    "dependencies": [
+        "langchain",
+        "langgraph"
+    ],
+    "graphs": {
+        "simple_chat": "src.graph:graph"
+    }
+} 

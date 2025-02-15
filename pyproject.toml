@@ -6,13 +6,16 @@ requires-python = ">=3.9"
 dependencies = [
     "langgraph>=0.0.15",
     "langchain>=0.1.0",
-    "langchain-openai>=0.0.2",
+    "langchain-mistralai>=0.0.3",
     "pydantic>=2.0.0",
+    "python-dotenv>=0.19.0",
+    "mistralai>=0.0.7",
+    "langgraph-cli[inmem]>=0.0.1"
 ]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=42.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 line-length = 88
@@ -22,4 +25,7 @@ target-version = "py39"
 select = ["E", "F", "I"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ai_summit_hackaton_backend"] 
+packages = ["src/ai_summit_hackaton_backend"]
+
+[tool.setuptools]
+packages = ["src"] 
