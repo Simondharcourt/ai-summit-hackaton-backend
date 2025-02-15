@@ -1,0 +1,17 @@
+.venv
+/scripts
+
+.DS_Store
+
+.env
+
+.idea
+demandeur/api_key.txt
+ai_summit_hackaton_backend.egg-info
+
+.pytest_cache
+
+__pycache__
+
+.langgraph
+.langgraph_api/

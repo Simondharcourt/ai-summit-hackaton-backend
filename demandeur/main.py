@@ -1,25 +1,49 @@
 import os, json
 from mistralai import Mistral
 
-api_key = open("demandeur/api_key.txt").read()
+api_key = os.environ["MISTRAL_API_KEY"]
 
 model = "mistral-large-latest"
 
 categories = ("Base", "Electricity", "Food", "Transport", "Infrastructure", "Other")
-argsCat = ({"n_persons": "integer"}, {"is_inside": "boolean", "n_hours": "integer"}, {"menu": "string"}, {"mode": "string", "distance": "number"}, {}, {})
+argsCat = (
+	{"n_persons": "integer"},
+	{"is_inside": "boolean", "n_hours": "integer"},
+	{"menu": "string"},
+	{"mode": "string", "distance": "number"},
+	{},
+	{},
+)
 
-descr = {"n_persons": ("Set the number of guests attending the party", "Number of guests attending the party"),
-		 "is_inside": ("Set whether the party is taking place indoors or outdoors", "A boolean that is true if the party is indoors, false if the party is outdoors"),
-		 "n_hours": ("Set the estimated length of the party", "An integer giving the length of the party, in hours"),
-		 "menu": ("Set the menu of the party", "A string describing the menu"),
-		 "mode": ("Set the main transportation mode of the guests", "A string representing the transportation mode of the guests", ("car", "train", "other")),
-		 "distance": ("Set the distance the guests will have to travel", "A floating-points value giving the distance the guests will have to travel, in kilometers"),
-		 }
+descr = {
+	"n_persons": (
+		"Set the number of guests attending the party",
+		"Number of guests attending the party",
+	),
+	"is_inside": (
+		"Set whether the party is taking place indoors or outdoors",
+		"A boolean that is true if the party is indoors, false if the party is outdoors",
+	),
+	"n_hours": (
+		"Set the estimated length of the party",
+		"An integer giving the length of the party, in hours",
+	),
+	"menu": ("Set the menu of the party", "A string describing the menu"),
+	"mode": (
+		"Set the main transportation mode of the guests",
+		"A string representing the transportation mode of the guests",
+		("car", "train", "other"),
+	),
+	"distance": (
+		"Set the distance the guests will have to travel",
+		"A floating-points value giving the distance the guests will have to travel, in kilometers",
+	),
+}
 
 
 def set_elec_emissions(is_inside, n_hours, **kw):
-	if (is_inside):
-		return n_hours*3
+	if is_inside:
+		return n_hours * 3
 	else:
 		return 0
 
@@ -74,14 +98,19 @@ def set_tspt_emissions(mode, distance, n_persons, **kw):
 	total_emissions = emission_factor * distance * n_persons
 	return total_emissions
 
+
 def set_infra_emissions(is_inside, n_hours, **kw):
-	if(is_inside):
-		return n_hours*3         # 3 correspond aux émissions de CO2 par heure dues au chauffage en intérieur
+	if is_inside:
+		return (
+			n_hours * 3
+		)  # 3 correspond aux émissions de CO2 par heure dues au chauffage en intérieur
 	else:
 		return 0
 
+
 def set_other_emissions(**kw):
 	return 0
+
 
 class Demandeur:
 	def __init__(self):
@@ -100,21 +129,22 @@ class Demandeur:
 		for i in range(len(categories)):
 			for arg in argsCat[i]:
 				d = {
-						"type": "function",
-						"function": {
-							"name": "set_" + arg,
-							"description": descr[arg][0],
-							"parameters": {
-								"type": "object",
-								"properties": {
-									arg: {
-										"type": argsCat[i][arg],
-										"description": descr[arg][1] + ".If it is not explicitly given, ask the user; never try to make up a value.",
-									},
+					"type": "function",
+					"function": {
+						"name": "set_" + arg,
+						"description": descr[arg][0],
+						"parameters": {
+							"type": "object",
+							"properties": {
+								arg: {
+									"type": argsCat[i][arg],
+									"description": descr[arg][1]
+									+ ".If it is not explicitly given, ask the user; never try to make up a value.",
 								},
-							 "required": [arg]
-							}
-						}
+							},
+							"required": [arg],
+						},
+					},
 				}
 				self.tools.append(d)
 
@@ -170,7 +200,15 @@ class Demandeur:
 						
 						arg, val = list(function_params.items())[0]
 
-						print ("System: bot updated variable", arg, "with value", val, "(type:", type(val), ")\n")
+						print(
+							"System: bot updated variable",
+							arg,
+							"with value",
+							val,
+							"(type:",
+							type(val),
+							")\n",
+						)
 						self.argsTotal[arg] = val
 
 						self.messages.append({"role":"tool", "name":function_name, "content":"La valeur a bien été mise à jour.", "tool_call_id":call.id})
@@ -179,13 +217,14 @@ class Demandeur:
 					print ("Bot:", ans.content, '\n', flush = True)
 					send_message(ans.content)
 
-				print (self.messages)
+				print(self.messages)
 
-			print ("finished category", i)
+			print("finished category", i)
 
 			for j in range(len(categories)):
 				if self.is_category_complete(j):
 					self.update_emissions(j)
+
 
 if __name__ == "__main__":
 	d = Demandeur()
