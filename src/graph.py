@@ -6,6 +6,10 @@ class EveningCarbonState:
         self.reponses = {}
         self.emissions_total = 0.0
         self.nb_personnes = 0
+    
+    def update_emission(self, amount: float):
+        """Ajoute une quantité d'émissions au total"""
+        self.emissions_total += amount
 
 # Création du graphe
 graph = StateGraph(EveningCarbonState)

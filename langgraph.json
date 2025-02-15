@@ -13,7 +13,10 @@
     },
     "dependencies": [
         "langchain",
-        "langgraph"
+        "langgraph",
+        "fastapi",
+        "uvicorn",
+        "pydantic"
     ],
     "graphs": {
         "simple_chat": "src.graph:graph"

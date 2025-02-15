@@ -15,3 +15,7 @@ uv pip install -e . # installation d dépendances du fichier toml
 
 # test local
 uv run langgraph dev
+
+
+# run fastapi
+uv run python serve.py
