@@ -1,0 +1,25 @@
+[project]
+name = "ai-summit-hackaton-backend"
+version = "0.1.0"
+description = "Backend pour le hackathon AI Summit"
+requires-python = ">=3.9"
+dependencies = [
+    "langgraph>=0.0.15",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.0.2",
+    "pydantic>=2.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_summit_hackaton_backend"] 
