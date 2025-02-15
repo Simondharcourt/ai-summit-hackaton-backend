@@ -21,12 +21,15 @@ async def websocket_endpoint(websocket: WebSocket):
 
     async def send_message(message):
         websocket.send_json({
-            "type": "token",
+            "type": "message",
             "content": message
         })
 
     async def update_bilan(bilan):
-        websocket.send_json(bilan)
+        websocket.send_json({
+            "type": "update",
+            "content": bilan
+        })
 
     demandeur.mainloop(
         wait_message,
