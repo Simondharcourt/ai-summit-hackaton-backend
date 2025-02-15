@@ -1,5 +1,6 @@
 import os, json
 from mistralai import Mistral
+from unidecode import unidecode
 
 api_key = os.environ["MISTRAL_API_KEY"]
 
@@ -205,7 +206,7 @@ class Demandeur:
                     self.messages.append(ans)
 
                     print("Bot:", ans.content, "\n")
-                    await send_message(ans.content)
+                    await send_message(unidecode(ans.content))
 
                 message = await wait_message()
                 print("User:", message, "\n")
@@ -262,7 +263,7 @@ class Demandeur:
 
                 else:
                     print("Bot:", ans.content, "\n", flush=True)
-                    await send_message(ans.content)
+                    await send_message(unidecode(ans.content))
 
                 print(self.messages)
 
