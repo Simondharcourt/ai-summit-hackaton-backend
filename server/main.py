@@ -25,7 +25,11 @@ async def websocket_endpoint(websocket: WebSocket):
             "content": message
         })
 
+    async def update_bilan(bilan):
+        websocket.send_json(bilan)
+
     demandeur.mainloop(
         wait_message,
         send_message,
+        update_bilan
     )
