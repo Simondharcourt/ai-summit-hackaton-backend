@@ -11,8 +11,9 @@ dependencies = [
     "python-dotenv>=0.19.0",
     "mistralai>=0.0.7",
     "langgraph-cli[inmem]>=0.0.1",
+    "mistralai>=0.0.12"
     "fastapi[standard]>=0.115.8"
-]
+
 
 [build-system]
 requires = ["setuptools>=42.0", "wheel"]
@@ -29,4 +30,4 @@ select = ["E", "F", "I"]
 packages = ["src/ai_summit_hackaton_backend"]
 
 [tool.setuptools]
-packages = ["src"] 
+packages = ["src"]
