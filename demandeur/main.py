@@ -130,7 +130,7 @@ class Demandeur:
 	def is_category_complete(self, i):
 		return all(self.argsTotal[key] != None for key in argsCat[i])
 
-	def mainloop(self, fn):
+	def mainloop(self, wait_message, send_message, update_message):
 		if None in self.dicoEmissions:
 			i = self.dicoEmissions.index(None)
 
