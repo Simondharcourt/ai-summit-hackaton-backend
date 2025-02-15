@@ -33,18 +33,55 @@ def build_tools():
 							"properties": {
 								arg: {
 									"type": args_cat[i][arg],
-									"description": descr[arg]. If it is not explicitly given, ask the user.",
+									"description": descr[arg][1] + ".If it is not explicitly given, ask the user; never try to make up a value.",
 								},
-								"is_veggie": {
-									"type": "boolean",
-									"description": "A boolean representing whether the meal is vegetarian. If it is not explicitly given, ask the user."
-								}
 							},
-							"required": ["n_guests", "is_veggie"]
+							"required": [arg]
 						}
+					}
 			}
+			tools.append(d)
 
 def mainloop():
 	messages = []
 	client = Mistral(api_key = api_key)
 
+	build_tools()
+
+	# if context:
+	# 	messages.append({"role": "system", "content": context})
+
+	while None in dicoEmissions:
+		i = dicoEmissions.index(None)
+
+		messages.append({"role": ""})
+
+		while None in argsTotal[i].values():
+			message = input()
+		
+			messages.append({"role": "user", "content": message})
+
+			print ("User: ", message, '\n')
+
+			ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
+			#print (ans)
+			messages.append(ans)
+
+			while ans.tool_calls:
+				for call in ans.tool_calls:
+					function_name = call.function.name
+					function_params = json.loads(call.function.arguments)
+					print ("System: bot made function call to", function_name, "with parameters", function_params)
+					
+					argsTotal[function_params.k]
+					print ("System: result is", res, '\n')
+
+					messages.append({"role":"tool", "name":function_name, "content":str(res), "tool_call_id":call.id})
+
+				ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
+				messages.append(ans)
+			
+			if ans.content:
+				print ("Bot: ", ans.content, '\n', flush = True)
+			else:
+				print ("Bot: (silence)\n", flush = True)
