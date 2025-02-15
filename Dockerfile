@@ -4,7 +4,7 @@ ADD . /app
 
 WORKDIR /app
 
-RUN uv sync --frozen
+RUN uv sync
 
 EXPOSE 8000
 
