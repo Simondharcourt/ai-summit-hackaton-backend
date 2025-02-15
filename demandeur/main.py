@@ -112,11 +112,11 @@ class Demandeur:
                 if self.is_category_complete(j):
                     self.update_emissions(j)
 
-def set_elec_emissions(is_inside, n_hours):
-    if (is_inside):
-        return n_hours*3
-    else:
-        return 0
+def set_elec_emissions(is_inside, n_hours, **kw):
+	if (is_inside):
+		return n_hours*3
+	else:
+		return 0
 
 def set_food_emissions(menu, nbPers, **kw):
     # Fonction très simple pour le moment
@@ -124,50 +124,50 @@ def set_food_emissions(menu, nbPers, **kw):
     return 3*nbPers
 
 def set_tspt_emissions(mode, dist, nbPers, **kw):
-    #mode : train , bike , car, bus, plane
-    #dist km
-    if mode == "train":
-        # Différents types de train
-        train_type = input("Type de train (TGV, Intercités, TER) : ").strip().lower()
-        if train_type == "tgv":
-            emission_factor = 1.73 / 1000  # TGV
-        elif train_type == "intercités":
-            emission_factor = 10 / 1000  # Intercités
-        elif train_type == "ter":
-            emission_factor = 30 / 1000  # TER
-      
-    
-    elif mode == "bus":
-        # Différents types de bus
-        bus_type = input("Type de bus (urbain, longue distance, électrique) : ").strip().lower()
-        if bus_type == "urbain":
-            emission_factor = 100 / 1000  # Bus urbain diesel
-        elif bus_type == "longue distance":
-            emission_factor = 70 / 1000  # Bus longue distance
-        elif bus_type == "électrique":
-            emission_factor = 15 / 1000  # Bus urbain électrique
-    
-    elif mode == "car":
-        # Différents types de voitures
-        car_type = input("Type de voiture (essence, diesel, électrique) : ").strip().lower()
-        if car_type == "essence":
-            emission_factor = 192 / 1000  # Voiture essence moyenne
-        elif car_type == "diesel":
-            emission_factor = 171 / 1000  # Voiture diesel
-        elif car_type == "électrique":
-            emission_factor = 20 / 1000  # Voiture électrique (mix électrique France)
-    
-    
-    elif mode == "plane":
-        emission_factor = 255 / 1000  # Avion court-courrier
-    
-    elif mode == "bike":
-        emission_factor = 0  # Vélo n'émet pas de CO₂
+	#mode : train , bike , car, bus, plane
+	#dist km
+	if mode == "train":
+		# Différents types de train
+		train_type = input("Type de train (TGV, Intercités, TER) : ").strip().lower()
+		if train_type == "tgv":
+			emission_factor = 1.73 / 1000  # TGV
+		elif train_type == "intercités":
+			emission_factor = 10 / 1000  # Intercités
+		elif train_type == "ter":
+			emission_factor = 30 / 1000  # TER
+	  
+	
+	elif mode == "bus":
+		# Différents types de bus
+		bus_type = input("Type de bus (urbain, longue distance, électrique) : ").strip().lower()
+		if bus_type == "urbain":
+			emission_factor = 100 / 1000  # Bus urbain diesel
+		elif bus_type == "longue distance":
+			emission_factor = 70 / 1000  # Bus longue distance
+		elif bus_type == "électrique":
+			emission_factor = 15 / 1000  # Bus urbain électrique
+	
+	elif mode == "car":
+		# Différents types de voitures
+		car_type = input("Type de voiture (essence, diesel, électrique) : ").strip().lower()
+		if car_type == "essence":
+			emission_factor = 192 / 1000  # Voiture essence moyenne
+		elif car_type == "diesel":
+			emission_factor = 171 / 1000  # Voiture diesel
+		elif car_type == "électrique":
+			emission_factor = 20 / 1000  # Voiture électrique (mix électrique France)
+	
+	
+	elif mode == "plane":
+		emission_factor = 255 / 1000  # Avion court-courrier
+	
+	elif mode == "bike":
+		emission_factor = 0  # Vélo n'émet pas de CO₂
 
-    
-    # Calcul des émissions totales
-    total_emissions = emission_factor * dist * nbPers
-    return total_emissions
+	
+	# Calcul des émissions totales
+	total_emissions = emission_factor * dist * nbPers
+	return total_emissions
 
 def set_infra_emissions(is_inside, n_hours, **kw):
     if(is_inside):
@@ -179,7 +179,19 @@ def set_other_emissions(**kw):
     return 0
     
 
-listFunc = [set_elec_emissions, set_food_emissions, set_tspt_emissions, set_infra_emissions, set_other_emissions]
+listFunc = [lambda **kwargs: 0, set_elec_emissions, set_food_emissions, set_tspt_emissions, set_infra_emissions, set_other_emissions]
+
+
+def update_emissions(i):
+	dicoEmissions[i] = listFunc[i](argsTotal)
+	return
+
+
+def is_category_complete(i):
+	return all(argsTotal[key] != None for key in argsCat[i])
+
+def is_category_complete(i):
+	return all(argsTotal[key] != None for key in argsCat[i])
 
 
 
@@ -204,11 +216,16 @@ listFunc = [set_elec_emissions, set_food_emissions, set_tspt_emissions, set_infr
 #     while None in dicoEmissions:
 #         i = dicoEmissions.index(None)
 
-#         if not argsCat[i]:
-#             dicoEmissions[i] = 0
-#             continue
+		if not argsCat[i]:
+			dicoEmissions[i] = 0
+			continue
+		
+		prompt = "Tu es un chatbot chargé de calculer les émissions de CO2 liées à l'organisation d'une soirée. Il faut que tu demandes à l'utilisateur les valeurs des paramètres suivants :\n"
+		for arg in argsCat[i].keys():
+			prompt += arg + ' : ' + descr[arg][1]
+		messages[0]["content"] = prompt
 
-#         messages[0]["content"] = "Il faut que tu demandes à l'utilisateur les valeurs des paramètres " + ", ".join(argsCat[i].keys())
+		print ("prompt", prompt)
 
 #         ans = client.chat.complete(model = model, messages = messages, tools = tools, tool_choice = "auto").choices[0].message
 #         messages.append(ans)
