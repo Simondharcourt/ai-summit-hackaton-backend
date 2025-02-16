@@ -10,6 +10,6 @@ EXPOSE 8000
 
 ARG API_KEY_MISTRAL
 
-ENV MISTRAL_API_KEY=$mistral_api_key
+ENV MISTRAL_API_KEY=$API_KEY_MISTRAL
 
-CMD ["uv", "run", "fastapi", "run", "server/main.py", "--port", "8000"]
+CMD ["uv", "run", "fastapi", "run", "server/main.py", "--port", "8000", "--host", "0.0.0.0"]
