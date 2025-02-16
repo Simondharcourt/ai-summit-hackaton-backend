@@ -363,6 +363,24 @@ class Demandeur:
 			if update_message:
 				await update_message(bilan)
 
+		self.messages[0]["content"] = "You are a chatbot responsible for calculating the CO2 emissions related to organizing a party. Now that you know the final emissions value, you can inform the user of its value:  " + str(sum(self.dicoEmissions))
+		ans = (
+					self.client.chat.complete(
+						model=model,
+						messages=self.messages,
+						tools=self.tools,
+						tool_choice="auto",
+					)
+					.choices[0]
+					.message
+				)
+		self.messages.append(ans)
+
+		print ("Bot:", ans.content, '\n')
+
+		if send_message:
+			await send_message(unidecode(ans.content))
+
 if __name__ == "__main__":
 	d = Demandeur()
 	asyncio.run(d.mainloop(None, None, None))
