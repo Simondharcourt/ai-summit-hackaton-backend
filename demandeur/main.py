@@ -363,7 +363,7 @@ class Demandeur:
 			if update_message:
 				await update_message(bilan)
 
-		self.messages[0]["content"] = "You are a chatbot responsible for calculating the CO2 emissions related to organizing a party. Now that you know the final emissions value, you must inform the user of its value in your next message:  " + str(sum(self.dicoEmissions))
+		self.messages[0]["content"] = "You are a chatbot responsible for calculating the CO2 emissions related to organizing a party. Now that you know the final emissions value, you must inform the user of its value in your next message:  " + str(sum(self.dicoEmissions)) + ".\nAlso ask the user if they would like you to inform them how to reduce the emissions."
 		ans = (
 					self.client.chat.complete(
 						model=model,
@@ -380,6 +380,33 @@ class Demandeur:
 
 		if send_message:
 			await send_message(unidecode(ans.content))
+
+		while True:
+			if wait_message:
+				message = await wait_message()
+				print("User:", message, "\n")
+			else:
+				print ("User: ", end='')
+				message = input()
+				print()
+
+			self.messages.append({"role": "user", "content": message})
+
+			ans = (
+				self.client.chat.complete(
+					model=model,
+					messages=self.messages
+				)
+				.choices[0]
+				.message
+			)
+			self.messages.append(ans)
+
+			print ("Bot:", ans.content, '\n')
+
+			if send_message:
+				await send_message(unidecode(ans.content))
+
 
 if __name__ == "__main__":
 	d = Demandeur()
