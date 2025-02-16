@@ -96,11 +96,7 @@ def set_other_emissions(**kw):
 class Demandeur:
 	def __init__(self):
 		self.messages = [
-			{"role": "system", "content": ""},
-			{
-				"role": "user",
-				"content": "Salut ! J'aimerais organiser une soirée étudiante. Peux-tu m'aider à estimer ses émissions de CO2 ?",
-			},
+			{"role": "system", "content": ""}
 		]
 		self.client = Mistral(api_key=api_key)
 		self.argsTotal = {key: None for dico in argsCat for key in dico}
@@ -174,19 +170,102 @@ class Demandeur:
 				ans.append((i-1, self.get_text(i), self.dicoEmissions[i]))
 		
 		return ans
+	
+	def traiter_call(self, call):
+		function_name = call.function.name
+		function_params = json.loads(call.function.arguments)
+		# print(
+		# 	"System: bot made function call to",
+		# 	function_name,
+		# 	"with parameters",
+		# 	function_params,
+		# )
+
+		arg, val = list(function_params.items())[0]
+
+		print(
+			"System: bot updated variable",
+			arg,
+			"with value",
+			val,
+			"(type:",
+			type(val),
+			")\n", flush = True
+		)
+		self.argsTotal[arg] = val
+
+		self.messages.append(
+			{
+				"role": "tool",
+				"name": function_name,
+				"content": "La valeur a bien été mise à jour.",
+				"tool_call_id": call.id,
+			}
+		)
 
 	async def mainloop(self, wait_message, send_message, update_message):
 		ans = None
+
+		# premier message pour lancer la conv
+
+		self.messages[0]["content"] = "Tu es un chatbot chargé de calculer les émissions de CO2 liées à l'organisation d'une soirée. Commence par lui demander s'il désire que tu calcules ses émissions de CO2."
+		ans = (
+				self.client.chat.complete(
+					model=model,
+					messages=self.messages,
+					tools=self.tools,
+					tool_choice="auto",
+				)
+				.choices[0]
+				.message
+			)
+		self.messages.append(ans)
+
+		print ("Bot:", ans.content, '\n')
+		if send_message:
+			await send_message(unidecode(ans.content))
+
+		if wait_message:
+			message = await wait_message()
+			print("User:", message, "\n")
+		else:
+			print ("User: ", end='')
+			message = input()
+			print()
+
+		self.messages.append({"role": "user", "content": message})
 
 		while None in self.dicoEmissions:
 			i = self.dicoEmissions.index(None)
 
 			prompt = "Tu es un chatbot chargé de calculer les émissions de CO2 liées à l'organisation d'une soirée. Il faut que tu demandes à l'utilisateur les informations suivantes :\n"
 			for arg in argsCat[i].keys():
-				prompt += descr[arg][1] + "\n"
+				prompt += "- " + descr[arg][1] + "\n"
+			prompt += "Ne lui donne jamais le nom précis des paramètres (n_hours), demande à l'utilisateur dans un langage correct.\n"
+			prompt += "Si la réponse de l'utilisateur n'est pas claire, insiste pour avoir une réponse précise. N'invente jamais de valeurs."
 
 			self.messages[0]["content"] = prompt
 			# print (prompt)
+
+			ans = (
+					self.client.chat.complete(
+						model=model,
+						messages=self.messages,
+						tools=self.tools,
+						tool_choice="auto",
+					)
+					.choices[0]
+					.message
+				)
+			self.messages.append(ans)
+
+			
+			if ans.tool_calls:
+				for call in ans.tool_calls:
+					self.traiter_call(call)
+			print ("Bot:", ans.content, '\n')
+			if send_message:
+				await send_message(unidecode(ans.content))
 
 			while not self.is_category_complete(i):
 				if ans is None or ans.content == "":
@@ -233,37 +312,7 @@ class Demandeur:
 
 				if ans.tool_calls:
 					for call in ans.tool_calls:
-						function_name = call.function.name
-						function_params = json.loads(call.function.arguments)
-						# print(
-						# 	"System: bot made function call to",
-						# 	function_name,
-						# 	"with parameters",
-						# 	function_params,
-						# )
-
-						arg, val = list(function_params.items())[0]
-
-						print(
-							"System: bot updated variable",
-							arg,
-							"with value",
-							val,
-							"(type:",
-							type(val),
-							")\n", flush = True
-						)
-						self.argsTotal[arg] = val
-
-						self.messages.append(
-							{
-								"role": "tool",
-								"name": function_name,
-								"content": "La valeur a bien été mise à jour.",
-								"tool_call_id": call.id,
-							}
-						)
-
+						self.traiter_call(call)
 				else:
 					print("Bot:", ans.content, "\n", flush=True)
 					if send_message:
@@ -289,5 +338,5 @@ if __name__ == "__main__":
 	print(d.argsTotal, d.dicoEmissions)
 
 
-# La fête est en extérieur ; elle durera 6 heures ; 50 personnes viendront, et parcourront 20 km en train ; nous mangerons du pain et du vin
+# La fête est dans mon salon ; elle durera 6 heures ; 50 personnes viendront, et parcourront 20 km en train ; nous mangerons du pain et du vin
 # 50 personnes viendront ; en intérieur ; elle durera 6 heures
