@@ -1,0 +1,36 @@
+name: Deploy Docker Image to Scaleway Registry
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: rg.fr-par.scw.cloud/funcscwcarboneventsfw2rrxka
+  IMAGE_NAME: carbon-events-backend
+  DOCKER_IMAGE: rg.fr-par.scw.cloud/funcscwcarboneventsfw2rrxka/carbon-events-backend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Scaleway Container Registry
+        run: docker login ${{ env.REGISTRY }} --username nologin --password ${{ secrets.SCW_SECRET_KEY }}
+
+      - name: Build Docker image
+        run: docker build -t ${{ env.DOCKER_IMAGE }} --build-arg API_KEY_MISTRAL ${{ secrets.API_KEY_MISTRAL }} .
+
+      - name: Tag Docker image
+        run: docker tag ${{ env.DOCKER_IMAGE }} ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+
+      - name: Push Docker image to Scaleway Registry
+        run: docker push ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+
+      - name: Push Docker image with 'latest' tag
+        run: |
+          docker tag ${{ env.DOCKER_IMAGE }}:${{ github.sha }} ${{ env.DOCKER_IMAGE }}:latest
+          docker push ${{ env.DOCKER_IMAGE }}:latest

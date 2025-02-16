@@ -3,6 +3,8 @@
 
 .DS_Store
 
+.env
+
 .idea
 demandeur/api_key.txt
 ai_summit_hackaton_backend.egg-info

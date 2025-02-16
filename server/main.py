@@ -1,4 +1,7 @@
 from fastapi import FastAPI, WebSocket
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from demandeur.main import Demandeur
 
@@ -8,6 +11,7 @@ app = FastAPI()
 @app.get("/")
 async def get():
     return {"status": "ok"}
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -20,19 +24,9 @@ async def websocket_endpoint(websocket: WebSocket):
         return raw_message
 
     async def send_message(message):
-        websocket.send_json({
-            "type": "message",
-            "content": message
-        })
+        await websocket.send_bytes({"type": "message", "content": message})
 
     async def update_bilan(bilan):
-        websocket.send_json({
-            "type": "update",
-            "content": bilan
-        })
+        await websocket.send_json({"type": "update", "content": bilan})
 
-    demandeur.mainloop(
-        wait_message,
-        send_message,
-        update_bilan
-    )
+    await demandeur.mainloop(wait_message, send_message, update_bilan)
