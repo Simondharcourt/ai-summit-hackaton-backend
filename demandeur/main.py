@@ -34,7 +34,7 @@ descr = {
 	"mode": (
 		"Set the main transportation mode of the guests",
 		"A string representing the transportation mode of the guests",
-		("train", "bus", "car", "plane", "bike", "other"),
+		("train", "bus", "car", "plane", "bike", "public transportation", "other"),
 	),
 	"distance": (
 		"Set the distance the guests will have to travel",
@@ -81,6 +81,9 @@ def set_tspt_emissions(mode, distance, n_persons, **kw):
 	# dist km
 	if mode == "train":
 		emission_factor = 10 / 1000  # Average train emissions in france
+	
+	elif mode == "public transportation":
+		emission_factor = 3 / 1000  # Standard metro emissions in france
 
 	elif mode == "bus":
 		emission_factor = 100 / 1000  # Average diesel bus
@@ -175,7 +178,7 @@ class Demandeur:
 		if i == 1:
 			s = "Electricity emissions: the party will be " + ["out", "in"][self.argsTotal["is_inside"]] + "doors and will last {n_hours} hours."
 		elif i == 2:
-			s = "Food emissions: there will be {n_persons} guest, eating {menu}"
+			s = "Food emissions: there will be {n_persons} guests, eating {menu}"
 		elif i == 3:
 			s = "Transport emissions: guests will be using {mode}, on an average distance of {distance} kilometers"
 		elif i == 4:
@@ -229,7 +232,9 @@ class Demandeur:
 
 		# premier message pour lancer la conv
 
-		self.messages[0]["content"] = "Tu es un chatbot chargé de calculer les émissions de CO2 liées à l'organisation d'une soirée. Commence par lui demander s'il désire que tu calcules ses émissions de CO2."
+		#self.messages[0]["content"] = "Tu es un chatbot chargé de calculer les émissions de CO2 liées à l'organisation d'une soirée. Commence par lui demander s'il désire que tu calcules ses émissions de CO2."
+		self.messages[0]["content"] = "You are a chatbot responsible for calculating the CO2 emissions related to organizing a party. Start by asking the user if they would like you to calculate their CO2 emissions."
+
 		ans = (
 				self.client.chat.complete(
 					model=model,
@@ -259,12 +264,18 @@ class Demandeur:
 		while None in self.dicoEmissions:
 			i = self.dicoEmissions.index(None)
 
-			prompt = "Tu es un chatbot chargé de calculer les émissions de CO2 liées à l'organisation d'une soirée. Il faut que tu demandes à l'utilisateur les informations suivantes :\n"
+			# prompt = "Tu es un chatbot chargé de calculer les émissions de CO2 liées à l'organisation d'une soirée. Il faut que tu demandes à l'utilisateur les informations suivantes :\n"
+			# for arg in argsCat[i].keys():
+			# 	prompt += "- " + descr[arg][1] + "\n"
+			# prompt += "Ne lui donne jamais le nom précis des paramètres (n_hours), demande à l'utilisateur dans un langage correct.\n"
+			# prompt += "Si la réponse de l'utilisateur n'est pas claire, insiste pour avoir une réponse précise. N'invente jamais de valeurs."
+
+			prompt = "You are a chatbot responsible for calculating the CO2 emissions related to organizing a party. You need to ask the user for the following information:"
 			for arg in argsCat[i].keys():
 				prompt += "- " + descr[arg][1] + "\n"
-			prompt += "Ne lui donne jamais le nom précis des paramètres (n_hours), demande à l'utilisateur dans un langage correct.\n"
-			prompt += "Si la réponse de l'utilisateur n'est pas claire, insiste pour avoir une réponse précise. N'invente jamais de valeurs."
-
+			prompt += "Never give the user the exact parameter names (e.g., n_hours); ask them using natural language."
+			prompt += "If the user's response is unclear, insist on getting a precise answer. Never make up values."
+			
 			self.messages[0]["content"] = prompt
 			# print (prompt)
 
