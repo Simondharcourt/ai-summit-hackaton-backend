@@ -53,7 +53,27 @@ def set_elec_emissions(is_inside, n_hours, **kw):
 def set_food_emissions(menu, n_persons, **kw):
 	# Fonction très simple pour le moment
 	# A long terme, il faut convertir le menu en CO2 à partir d'Agribalise et de Reasoning AI puis faire le pduit
-	return 3 * n_persons
+	#return 3 * n_persons
+
+	client = Mistral(api_key = api_key)
+	messages = [{"role": "system", "content": "On a single line, print the estimated CO2 cost of preparing the following meal for 10 persons, in equivalent kg CO2. Do not add any commentary, simply print the value on a single line.\n" + menu}]
+
+	ans = (
+		client.chat.complete(
+			model=model,
+			messages=messages,
+		)
+		.choices[0]
+		.message
+	)
+	
+	try:
+		val = float(ans.content)
+	except:
+		val = 0.
+	
+	return val * n_persons / 10
+
 
 
 def set_tspt_emissions(mode, distance, n_persons, **kw):
@@ -153,15 +173,16 @@ class Demandeur:
 	
 	def get_text(self, i):
 		if i == 1:
-			return "Electricity emissions: length: {n_hours} hours; ".format(**self.argsTotal) + ["out", "in"][self.argsTotal["is_inside"]] + "doors"
+			s = "Electricity emissions: the party will be " + ["out", "in"][self.argsTotal["is_inside"]] + "doors and will last {n_hours} hours."
 		elif i == 2:
-			return "Food emissions: menu {menu}".format(**self.argsTotal)
+			s = "Food emissions: there will be {n_persons} guest, eating {menu}"
 		elif i == 3:
-			return "Transport emissions: guests will be using {mode}, on an average distance of {distance} kilometers".format(**self.argsTotal)
+			s = "Transport emissions: guests will be using {mode}, on an average distance of {distance} kilometers"
 		elif i == 4:
-			return "Infrastructure emissions: None"
+			s = "Infrastructure emissions: None"
 		else:
-			return "Other emissions: None"
+			s = "Other emissions: None"
+		return s.format(**self.argsTotal)
 	
 	def get_bilan(self):
 		ans = []
