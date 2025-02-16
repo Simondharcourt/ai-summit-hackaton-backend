@@ -51,12 +51,12 @@ def set_elec_emissions(is_inside, n_hours, **kw):
 
 
 def set_food_emissions(menu, n_persons, **kw):
-	# Fonction très simple pour le moment
-	# A long terme, il faut convertir le menu en CO2 à partir d'Agribalise et de Reasoning AI puis faire le pduit
-	#return 3 * n_persons
+	# we should ask the LLM to come up with a list of ingredients, and compute the CO2 cost according to this
+	# for now, we just ask it to make up a value, which should hopefully be somewhat accurate
+	# when testing, it gave relatively accurate values (7-10 kgeqCO2 for a meal based on beef, 1-2 kgeqCO2 for a vegetarian meal)
 
 	client = Mistral(api_key = api_key)
-	messages = [{"role": "system", "content": "On a single line, print the estimated CO2 cost of preparing the following meal for 10 persons, in equivalent kg CO2. Do not add any commentary, simply print the value on a single line.\n" + menu}]
+	messages = [{"role": "system", "content": "On a single line, print the estimated CO2 cost of making the following meal for 10 persons, in equivalent kg CO2. Do not add any commentary, simply print the value on a single line.\n" + menu}]
 
 	ans = (
 		client.chat.complete(
@@ -93,10 +93,10 @@ def set_tspt_emissions(mode, distance, n_persons, **kw):
 		emission_factor = 192 / 1000  # Average gasoline car
 
 	elif mode == "plane":
-		emission_factor = 255 / 1000  # Avion court-courrier
+		emission_factor = 255 / 1000  # Average plane emissions
 
 	elif mode == "bike" or mode == "other":
-		emission_factor = 0  # Vélo n'émet pas de CO₂
+		emission_factor = 0  # No CO2 emissions
 
 	# Calcul des émissions totales
 	total_emissions = emission_factor * distance * n_persons
@@ -107,7 +107,7 @@ def set_infra_emissions(is_inside, n_hours, **kw):
 	if is_inside:
 		return (
 			n_hours * 3
-		)  # 3 correspond aux émissions de CO2 par heure dues au chauffage en intérieur
+		)  # emissions per hours due to heating if the party is held indoors
 	else:
 		return 0
 
@@ -182,7 +182,7 @@ class Demandeur:
 		elif i == 3:
 			s = "Transport emissions: guests will be using {mode}, on an average distance of {distance} kilometers"
 		elif i == 4:
-			s = "Infrastructure emissions: None"
+			s = "Infrastructure emissions: the party will be " + ["out", "in"][self.argsTotal["is_inside"]] + "doors and will last {n_hours} hours."
 		else:
 			s = "Other emissions: None"
 		return s.format(**self.argsTotal)
