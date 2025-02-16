@@ -13,7 +13,7 @@ argsCat = (
 	{"is_inside": "boolean", "n_hours": "integer"},
 	{"menu": "string"},
 	{"mode": "string", "distance": "number"},
-	{},
+	{"is_inside": "boolean", "n_hours": "integer", "area": "integer"},
 	{},
 )
 
@@ -40,6 +40,10 @@ descr = {
 		"Set the distance the guests will have to travel",
 		"A floating-points value giving the distance the guests will have to travel, in kilometers",
 	),
+	"area": (
+		"Set the area of the party grounds",
+		"An integer giving the area of the party grounds, in square meters"
+	)
 }
 
 
@@ -103,11 +107,11 @@ def set_tspt_emissions(mode, distance, n_persons, **kw):
 	return total_emissions
 
 
-def set_infra_emissions(is_inside, n_hours, **kw):
+def set_infra_emissions(is_inside, n_hours, area, **kw):
 	if is_inside:
 		return (
-			n_hours * 3
-		)  # emissions per hours due to heating if the party is held indoors
+			n_hours * area * 0.005
+		)  # emissions per hours due to heating if the party is held indoors (0.005 kgeqCO2 / m^2 / hour for gas heating)
 	else:
 		return 0
 
@@ -124,12 +128,13 @@ class Demandeur:
 		self.client = Mistral(api_key=api_key)
 		self.argsTotal = {key: None for dico in argsCat for key in dico}
 		self.dicoEmissions = [None] * len(categories)
-		self.dicoEmissions[4] = 0
 		self.dicoEmissions[5] = 0
 
 		self.tools = []
 
 		self.build_tools()
+
+		print (self.tools)
 
 	def build_tools(self):
 		for i in range(len(categories)):
@@ -154,7 +159,8 @@ class Demandeur:
 				}
 				if len(descr[arg]) == 3:		# if there is a third value, it's a list giving the possible values for the argument
 					d["function"]["parameters"]["properties"][arg]["enum"] = descr[arg][2]
-				self.tools.append(d)
+				if d not in self.tools:
+					self.tools.append(d)
 
 	def update_emissions(self, i):
 		listFunc = [
@@ -273,8 +279,9 @@ class Demandeur:
 			prompt = "You are a chatbot responsible for calculating the CO2 emissions related to organizing a party. You need to ask the user for the following information:"
 			for arg in argsCat[i].keys():
 				prompt += "- " + descr[arg][1] + "\n"
-			prompt += "Never give the user the exact parameter names (e.g., n_hours); ask them using natural language."
-			prompt += "If the user's response is unclear, insist on getting a precise answer. Never make up values."
+			prompt += "Never give the user the exact parameter names (e.g., n_hours); ask them using natural language.\n"
+			prompt += "If the user's response is unclear, insist on getting a precise answer. Never make up values.\n"
+			prompt += "As soon as you know the answer to a parameter, immediately call the function to set it.\n"
 			
 			self.messages[0]["content"] = prompt
 			# print (prompt)
@@ -350,7 +357,7 @@ class Demandeur:
 					if send_message:
 						await send_message(unidecode(ans.content))
 
-				#print(self.messages)
+				print (self.dicoEmissions, self.argsTotal)
 
 			print("finished category", categories[i], flush = True)
 
