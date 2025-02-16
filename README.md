@@ -1,5 +1,9 @@
 # ai-summit-hackaton-backend
 
+```
+docker build -t carbon-events-backend .
+```
+
 
 # initialisation
 pip install langgraph-cli
