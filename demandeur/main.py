@@ -154,6 +154,26 @@ class Demandeur:
 
 	def is_category_complete(self, i):
 		return all(self.argsTotal[key] != None for key in argsCat[i])
+	
+	def get_text(self, i):
+		if i == 1:
+			return "Electricity emissions: length: {n_hours} hours; ".format(**self.argsTotal) + ["out", "in"][self.argsTotal["is_inside"]] + "doors"
+		elif i == 2:
+			return "Food emissions: menu {menu}".format(**self.argsTotal)
+		elif i == 3:
+			return "Transport emissions: guests will be using {mode}, on an average distance of {distance} kilometers".format(**self.argsTotal)
+		elif i == 4:
+			return "Infrastructure emissions: None"
+		else:
+			return "Other emissions: None"
+	
+	def get_bilan(self):
+		ans = []
+		for i in range(1, len(categories)):
+			if self.dicoEmissions[i] != None:
+				ans.append((i-1, self.get_text(i), self.dicoEmissions[i]))
+		
+		return ans
 
 	async def mainloop(self, wait_message, send_message, update_message):
 		ans = None
@@ -257,6 +277,10 @@ class Demandeur:
 				if self.is_category_complete(j):
 					self.update_emissions(j)
 
+			bilan = self.get_bilan()
+			print ("Bilan:", bilan, "\n")
+			if update_message:
+				await update_message(bilan)
 
 if __name__ == "__main__":
 	d = Demandeur()
