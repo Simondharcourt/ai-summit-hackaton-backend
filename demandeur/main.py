@@ -363,7 +363,7 @@ class Demandeur:
 			if update_message:
 				await update_message(bilan)
 
-		self.messages[0]["content"] = "You are a chatbot responsible for calculating the CO2 emissions related to organizing a party. Now that you know the final emissions value, you can inform the user of its value:  " + str(sum(self.dicoEmissions))
+		self.messages[0]["content"] = "You are a chatbot responsible for calculating the CO2 emissions related to organizing a party. Now that you know the final emissions value, you must inform the user of its value in your next message:  " + str(sum(self.dicoEmissions))
 		ans = (
 					self.client.chat.complete(
 						model=model,
