@@ -182,7 +182,7 @@ class Demandeur:
 		elif i == 3:
 			s = "Transport emissions: guests will be using {mode}, on an average distance of {distance} kilometers"
 		elif i == 4:
-			s = "Infrastructure emissions: the party will be " + ["out", "in"][self.argsTotal["is_inside"]] + "doors and will last {n_hours} hours."
+			s = "Infrastructure emissions: the party will be " + ["out", "in"][bool(self.argsTotal["is_inside"])] + "doors and will last {n_hours} hours."
 		else:
 			s = "Other emissions: None"
 		return s.format(**self.argsTotal)
