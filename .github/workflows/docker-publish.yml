@@ -22,7 +22,7 @@ jobs:
         run: docker login ${{ env.REGISTRY }} --username nologin --password ${{ secrets.SCW_SECRET_KEY }}
 
       - name: Build Docker image
-        run: docker build -t ${{ env.DOCKER_IMAGE }} --build-arg API_KEY_MISTRAL=${{ secrets.API_KEY_MISTRAL }} .
+        run: docker build -t ${{ env.DOCKER_IMAGE }} --build-arg API_KEY_MISTRAL=${{ secrets.MISTRAL_API_KEY }} .
 
       - name: Tag Docker image
         run: docker tag ${{ env.DOCKER_IMAGE }} ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
