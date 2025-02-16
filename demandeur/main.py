@@ -176,7 +176,7 @@ class Demandeur:
 	
 	def get_text(self, i):
 		if i == 1:
-			s = "Electricity emissions: the party will be " + ["out", "in"][self.argsTotal["is_inside"]] + "doors and will last {n_hours} hours."
+			s = "Electricity emissions: the party will be " + ["out", "in"][bool(self.argsTotal["is_inside"])] + "doors and will last {n_hours} hours."
 		elif i == 2:
 			s = "Food emissions: there will be {n_persons} guests, eating {menu}"
 		elif i == 3:
