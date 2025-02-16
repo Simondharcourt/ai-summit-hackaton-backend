@@ -24,9 +24,13 @@ async def websocket_endpoint(websocket: WebSocket):
         return raw_message
 
     async def send_message(message):
-        await websocket.send_bytes({"type": "message", "content": message})
+        await websocket.send_json({"type": "message", "content": message})
 
     async def update_bilan(bilan):
         await websocket.send_json({"type": "update", "content": bilan})
+
+    await wait_message()
+
+    await websocket.send_json({"type": "ping", "content": "pong"})
 
     await demandeur.mainloop(wait_message, send_message, update_bilan)
